@@ -3,9 +3,11 @@ import {
   User, Sparkles, Plus, Trash2, Edit2, Target, 
   TrendingUp, CheckCircle, ArrowUpRight, Search, 
   HelpCircle, Check, X, ShieldAlert, Award, Briefcase, Network, Info, Upload,
-  Globe, Share2
+  Globe, Share2, HardDrive, Download, Smartphone
 } from 'lucide-react';
 import { UserProfile, Contact, LifeGoal } from '../types';
+import { exportLocalBackup, importLocalBackup, getLocalStorageFootprint } from '../utils/localBackup';
+import { PWAInstallButton } from './pwa/PWAInstallButton';
 
 interface UserProfileViewProps {
   userProfile: UserProfile;
@@ -1556,6 +1558,87 @@ export default function UserProfileView({
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      {/* 5. WebApp Installation & Local Device Storage */}
+      <div className="bg-zinc-900/90 rounded-2xl sm:rounded-3xl border border-zinc-800 p-5 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800/60 pb-3 gap-2">
+          <div>
+            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-[#007BFF]" /> WebApp Installation & Local Device Storage
+            </h3>
+            <p className="text-[10px] text-zinc-500 mt-1">
+              Your network CRM is 100% offline-capable and stored locally on your device with zero cloud tracking.
+            </p>
+          </div>
+          <PWAInstallButton variant="header" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          {/* Export to Local Drive */}
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-850 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4 text-emerald-400" />
+                <h4 className="text-xs font-bold text-white">Save Backup to Local Disk</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const res = exportLocalBackup();
+                    alert(`Backup successfully saved: ${res.filename}`);
+                  } catch (e: any) {
+                    alert(`Export failed: ${e.message}`);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export .JSON
+              </button>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Downloads a complete offline backup file directly to your computer or phone's local files.
+            </p>
+          </div>
+
+          {/* Restore from Local Drive */}
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-850 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4 text-blue-400" />
+                <h4 className="text-xs font-bold text-white">Restore from Local Disk</h4>
+              </div>
+              <label className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-200 border border-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm">
+                <Upload className="w-3.5 h-3.5 text-blue-400" />
+                Choose File
+                <input 
+                  type="file" 
+                  accept=".json,application/json" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      try {
+                        importLocalBackup(ev.target?.result as string);
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert(`Restore failed: ${err.message}`);
+                      }
+                    };
+                    reader.readAsText(file);
+                  }}
+                />
+              </label>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Upload a previously saved <code className="text-zinc-300 font-mono text-[10px]">.json</code> backup from your local drive to restore all records.
+            </p>
+          </div>
         </div>
       </div>
 

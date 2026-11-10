@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   HelpCircle, X, Play, RotateCcw, Compass, Clock, Target, 
-  Keyboard, CheckCircle2, ChevronRight, ShieldCheck 
+  Keyboard, CheckCircle2, ChevronRight, ShieldCheck, UserPlus
 } from 'lucide-react';
 import { TourType } from './types';
 
@@ -104,6 +104,31 @@ export const WalkthroughHelpModal: React.FC<WalkthroughHelpModalProps> = ({
                   </h4>
                   <p className="text-xs text-zinc-400 mt-0.5">
                     Complete 7-step guide covering Directory, Events, Strategy & Topology.
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors shrink-0 ml-2" />
+            </button>
+
+            {/* Tour Option: Interactive Contact Creation Exercise */}
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onStartTour('create-contact');
+              }}
+              className="w-full text-left p-3.5 bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 hover:border-[#007BFF]/50 rounded-2xl transition-all flex items-center justify-between group cursor-pointer active:scale-[0.99] shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white group-hover:text-emerald-300 transition-colors">
+                    Interactive Contact Creation
+                  </h4>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Hands-on guided practice: tap tabs, open form, type name, and save.
                   </p>
                 </div>
               </div>

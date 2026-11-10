@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, Calendar, Target, Plus, User, Search, X, ArrowUpRight, Sparkles, AlertCircle, Network,
-  Menu, Clock, Smartphone, HelpCircle
+  Menu, Clock, Smartphone, HelpCircle, HardDrive
 } from 'lucide-react';
 import { ActiveTab, ViewState, CustomFolders, Contact, Event, Strategy, UserProfile } from './types';
 import { initialContacts, initialEvents, initialStrategies, initialUserProfile } from './data/mockData';
@@ -16,6 +16,9 @@ import { usePlatform } from './utils/platform';
 import { useWalkthroughState } from './walkthrough/useWalkthroughState';
 import { OnboardingWalkthrough } from './walkthrough/OnboardingWalkthrough';
 import { WalkthroughHelpModal } from './walkthrough/WalkthroughHelpModal';
+import { PWAInstallButton } from './components/pwa/PWAInstallButton';
+import { OfflineIndicator } from './components/pwa/OfflineIndicator';
+import { LocalBackupModal } from './components/pwa/LocalBackupModal';
 
 export default function App() {
   const { mode, activePlatform, isIOS, isAndroid, togglePlatform } = usePlatform();
@@ -92,12 +95,42 @@ export default function App() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [isLocalBackupOpen, setIsLocalBackupOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const reloadLocalData = () => {
+    try {
+      const c = localStorage.getItem('rolodox_contacts_v1');
+      if (c) setContacts(JSON.parse(c));
+      const e = localStorage.getItem('rolodox_events_v1');
+      if (e) setEvents(JSON.parse(e));
+      const s = localStorage.getItem('rolodox_strategies_v1');
+      if (s) setStrategies(JSON.parse(s));
+      const f = localStorage.getItem('rolodox_custom_folders_v1');
+      if (f) setCustomFolders(JSON.parse(f));
+      const p = localStorage.getItem('rolodox_user_profile_v1');
+      if (p) setUserProfile(JSON.parse(p));
+    } catch (err) {
+      console.warn('Failed to reload local data:', err);
+    }
+  };
 
   // Production-grade interactive walkthrough state
   const walkthrough = useWalkthroughState();
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // Tour Context for precision targeting and real-time state verification
+  const tourContext = useMemo(() => ({
+    contacts,
+    events,
+    strategies,
+    activeTab,
+    viewState,
+    isMaintenanceOpen,
+    platformMode: mode,
+    activePlatform
+  }), [contacts, events, strategies, activeTab, viewState, isMaintenanceOpen, mode, activePlatform]);
   const dueContactsCount = useMemo(() => {
     return contacts.filter(c => {
       if (c.nextFollowUpDate && c.nextFollowUpDate <= todayStr) return true;
@@ -370,6 +403,7 @@ export default function App() {
         <div className="flex items-center gap-2 shrink-0">
           <button
             id="sidebar-hamburger-menu-btn"
+            data-tour-id="sidebar-hamburger-button"
             type="button"
             onClick={() => setIsMaintenanceOpen(true)}
             className="min-h-[40px] min-w-[40px] flex items-center justify-center p-2 hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-xl transition-all relative cursor-pointer active:scale-95"
@@ -399,6 +433,7 @@ export default function App() {
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="global-header-search"
+              data-tour-id="global-search-input"
               type="text"
               value={searchQuery}
               onChange={(e) => {
@@ -563,6 +598,7 @@ export default function App() {
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             id="header-maintain-btn"
+            data-tour-id="maintain-button"
             type="button"
             onClick={() => setIsMaintenanceOpen(true)}
             className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-medium px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
@@ -582,6 +618,7 @@ export default function App() {
           {viewState.view === 'list' && activeTab !== 'visualizer' && activeTab !== 'profile' && (
             <button 
               id="header-create-btn"
+              data-tour-id="create-contact-button"
               type="button"
               onClick={goToCreate} 
               className="min-h-[36px] min-w-[36px] bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center border border-indigo-500/30 cursor-pointer"
@@ -594,6 +631,7 @@ export default function App() {
           {/* Guided Walkthrough / Tour Launcher Trigger */}
           <button
             id="walkthrough-help-trigger"
+            data-tour-id="tour-help-button"
             type="button"
             onClick={() => setIsHelpModalOpen(true)}
             className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono px-2 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
@@ -607,6 +645,7 @@ export default function App() {
           {/* Adaptive OS Guideline Switcher */}
           <button
             id="platform-switch-btn"
+            data-tour-id="platform-switch-button"
             type="button"
             onClick={togglePlatform}
             className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono px-2 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
@@ -615,6 +654,22 @@ export default function App() {
             <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
             <span className="font-bold">{isIOS ? 'iOS' : 'M3'}</span>
             <span className="text-[9px] text-zinc-500 uppercase hidden sm:inline">{mode === 'auto' ? 'Auto' : 'Lock'}</span>
+          </button>
+
+          {/* PWA In-App Install Button */}
+          <PWAInstallButton variant="header" />
+
+          {/* Local Storage & Device Backup Modal Trigger */}
+          <button
+            id="local-storage-backup-btn"
+            type="button"
+            onClick={() => setIsLocalBackupOpen(true)}
+            className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
+            title="Save data onto local device or restore from backup"
+            aria-label="Local storage and device backup"
+          >
+            <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="font-semibold hidden sm:inline text-zinc-200">Local</span>
           </button>
 
           <button
@@ -718,6 +773,7 @@ export default function App() {
       }`}>
         <NavButton 
           id="nav-tab-contacts"
+          dataTourId="contacts-tab"
           active={activeTab === 'contacts'} 
           icon={<Users />} 
           label="Directory" 
@@ -726,6 +782,7 @@ export default function App() {
         />
         <NavButton 
           id="nav-tab-events"
+          dataTourId="events-tab"
           active={activeTab === 'events'} 
           icon={<Calendar />} 
           label="Events" 
@@ -734,6 +791,7 @@ export default function App() {
         />
         <NavButton 
           id="nav-tab-strategy"
+          dataTourId="strategy-tab"
           active={activeTab === 'strategy'} 
           icon={<Target />} 
           label="Strategy" 
@@ -742,6 +800,7 @@ export default function App() {
         />
         <NavButton 
           id="nav-tab-visualizer"
+          dataTourId="visualizer-tab"
           active={activeTab === 'visualizer'} 
           icon={<Network />} 
           label="Network" 
@@ -750,6 +809,7 @@ export default function App() {
         />
         <NavButton 
           id="nav-tab-profile"
+          dataTourId="profile-tab"
           active={activeTab === 'profile'} 
           icon={<User />} 
           label="Profile" 
@@ -772,8 +832,11 @@ export default function App() {
         isActive={walkthrough.isActive}
         currentStep={walkthrough.currentStep}
         currentStepIndex={walkthrough.currentStepIndex}
+        currentSubAction={walkthrough.currentSubAction}
+        currentSubActionIndex={walkthrough.currentSubActionIndex}
         totalSteps={walkthrough.totalSteps}
         activeTab={activeTab}
+        tourContext={tourContext}
         onNavigateTab={(tab) => {
           setSkipReset(true);
           setActiveTab(tab);
@@ -781,6 +844,7 @@ export default function App() {
         }}
         onNext={walkthrough.nextStep}
         onPrev={walkthrough.prevStep}
+        onAdvanceSubAction={walkthrough.advanceSubAction}
         onSkip={walkthrough.skipTour}
         onFinish={walkthrough.finishTour}
       />
@@ -794,6 +858,16 @@ export default function App() {
         hasCompleted={walkthrough.hasCompleted}
         hasDismissed={walkthrough.hasDismissed}
       />
+
+      {/* Local Storage & Device Backup Modal */}
+      <LocalBackupModal
+        isOpen={isLocalBackupOpen}
+        onClose={() => setIsLocalBackupOpen(false)}
+        onDataRestored={reloadLocalData}
+      />
+
+      {/* PWA Offline Connectivity Indicator */}
+      <OfflineIndicator />
     </div>
   );
 }

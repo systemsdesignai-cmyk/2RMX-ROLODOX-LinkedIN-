@@ -7,7 +7,10 @@ import {
   Folder, Briefcase, ChevronLeft, Trash2, ArrowUpRight, Sparkles, Loader2, CheckCircle, Upload,
   Edit2, Check, Clock, Phone
 } from 'lucide-react';
-import { Contact, Event, CustomFolders, ViewState, Skill, Conversation, Transcription, MaintenanceLog } from '../types';
+import { Contact, Event, CustomFolders, ViewState, Skill, Conversation, Transcription, MaintenanceLog, CommunicationChannel } from '../types';
+import { SocialContactIcons } from './social/SocialContactIcons';
+import { ContactCommunicationEditor } from './social/ContactCommunicationEditor';
+import { getContactChannels } from './social/communicationPlatforms';
 
 interface ContactsViewProps {
   contacts: Contact[];
@@ -391,6 +394,7 @@ export default function ContactsView({
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 pointer-events-none" />
         <input 
           id="search-input"
+          data-tour-id="contacts-search-input"
           type="text" 
           placeholder="Search directory by name, tag, or headline..." 
           className="w-full bg-zinc-900/90 border border-zinc-800 text-zinc-100 text-sm rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/60 transition-all placeholder:text-zinc-500 font-sans"
@@ -430,6 +434,7 @@ export default function ContactsView({
             <div key={group.id} className="relative shrink-0 flex items-center group">
               <button 
                 id={`group-tab-${group.id}`}
+                data-tour-id={group.id === 'category' ? "group-by-category-button" : undefined}
                 type="button"
                 onClick={() => { 
                   setGroupBy(group.id); 
@@ -684,9 +689,10 @@ export default function ContactsView({
           )}
 
           <div className="space-y-2">
-            {displayContacts.map(contact => (
+            {displayContacts.map((contact, idx) => (
               <div 
                 id={`contact-row-${contact.id}`}
+                data-tour-id={idx === 0 ? "contact-first-card" : undefined}
                 key={contact.id} 
                 onClick={() => goToDetail(contact.id)} 
                 className="bg-zinc-900/80 hover:bg-zinc-850/90 active:bg-zinc-800/90 p-3.5 sm:p-4 rounded-2xl border border-zinc-800/80 hover:border-zinc-700/80 flex items-center justify-between cursor-pointer transition-all duration-150 active:scale-[0.99] group shadow-sm min-h-[64px]"
@@ -728,6 +734,8 @@ export default function ContactsView({
                           #{tag}
                         </span>
                       ))}
+                      {/* Multi-platform communication channels */}
+                      <SocialContactIcons channels={getContactChannels(contact)} size="xs" />
                     </div>
                   </div>
                 </div>
@@ -1291,18 +1299,9 @@ function ContactDetail({ contact, goToList, setContacts }: ContactDetailProps) {
             </div>
             <p className="text-zinc-400 font-normal text-sm mt-0.5 break-words">{contact.title}</p>
 
-            {/* Social Links */}
-            <div className="mt-3.5 flex flex-wrap justify-center sm:justify-start gap-2">
-              {contact.socials?.whatsapp && (
-                <span className="text-xs bg-zinc-950 text-emerald-400 px-2.5 py-1 rounded-lg border border-zinc-800 font-mono flex items-center gap-1.5">
-                  <span className="text-zinc-500">WhatsApp:</span> <strong className="text-zinc-200 font-medium">{contact.socials.whatsapp}</strong>
-                </span>
-              )}
-              {contact.socials?.linkedin && (
-                <span className="text-xs bg-zinc-950 text-blue-400 px-2.5 py-1 rounded-lg border border-zinc-800 font-mono flex items-center gap-1.5">
-                  <span className="text-zinc-500">LinkedIn:</span> <strong className="text-zinc-200 font-medium">{contact.socials.linkedin}</strong>
-                </span>
-              )}
+            {/* Multi-Platform Social Channels */}
+            <div className="mt-3.5 flex flex-wrap justify-center sm:justify-start items-center gap-2">
+              <SocialContactIcons channels={getContactChannels(contact)} size="sm" />
             </div>
           </div>
         </div>
@@ -1514,77 +1513,30 @@ function ContactDetail({ contact, goToList, setContacts }: ContactDetailProps) {
         )}
       </div>
 
-      {/* WhatsApp Communication Context Card */}
+      {/* Multi-Platform Social Communication & Direct Action Hub */}
       <div className="bg-zinc-900/90 rounded-2xl border border-zinc-800 p-5 space-y-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-800/60 pb-3">
-          <div>
-            <h3 className="text-xs font-semibold text-zinc-200 uppercase tracking-wider font-mono flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-emerald-400" /> Direct Communication Link
-            </h3>
-            <p className="text-[11px] text-zinc-400 mt-0.5">
-              Store a direct chat link to stay in touch with {contact.name} without having to exit your workspace to find their chat.
-            </p>
-          </div>
-          {contact.whatsAppUrl ? (
-            <a 
-              href={contact.whatsAppUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition-all active:scale-95 flex items-center gap-2 shadow-sm"
-            >
-              <MessageCircle className="w-4 h-4 text-white" />
-              Launch WhatsApp Chat
-            </a>
-          ) : (
-            <span className="text-[10px] font-mono text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded-lg">
-              No Active Chat Link
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 items-end">
-          <div className="w-full">
-            <label className="block text-[10px] font-mono font-bold text-zinc-500 uppercase mb-1.5">Saved Chat Link / wa.me URL</label>
-            <input 
-              type="text" 
-              placeholder="Paste raw phone number (e.g. +1 555 019 2834) or direct wa.me link..."
-              value={whatsAppUrlInput}
-              onChange={e => setWhatsAppUrlInput(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-850 text-zinc-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-indigo-500 font-mono placeholder:text-zinc-600"
-            />
-            {whatsAppUrlInput.trim() && (
-              <div className="mt-2 p-1.5 px-2 bg-indigo-950/20 border border-indigo-900/20 rounded-lg flex items-center justify-between gap-2 text-[10px]">
-                <div className="text-zinc-400 font-mono flex items-center gap-1 truncate">
-                  <span className="text-indigo-400 font-bold">⚡ Live Target:</span>
-                  <span className="text-zinc-300 font-medium truncate select-all">
-                    {(() => {
-                      const val = whatsAppUrlInput.trim();
-                      const digitsOnly = val.replace(/[\s+()\-]/g, '');
-                      if (/^\d+$/.test(digitsOnly)) {
-                        return `https://wa.me/${digitsOnly}`;
-                      } else if (/^wa\.me\//i.test(val)) {
-                        return `https://${val}`;
-                      } else if (!/^https?:\/\//i.test(val)) {
-                        const numbersOnly = val.replace(/\D/g, '');
-                        if (numbersOnly.length > 0) {
-                          return `https://wa.me/${numbersOnly}`;
-                        }
-                      }
-                      return val;
-                    })()}
-                  </span>
-                </div>
-                <span className="text-[8px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">Auto-formatted</span>
-              </div>
-            )}
-          </div>
-          <button 
-            onClick={saveWhatsAppUrlInline}
-            className="bg-zinc-800 hover:bg-zinc-750 text-zinc-200 font-semibold text-xs px-4 py-2 rounded-xl border border-zinc-700/50 transition-all active:scale-95 shrink-0"
-          >
-            Save Link
-          </button>
-        </div>
+        <ContactCommunicationEditor
+          channels={getContactChannels(contact)}
+          onChange={(newChannels) => {
+            setContacts(prev => prev.map(c => {
+              if (c.id === contact.id) {
+                const wa = newChannels.find(ch => ch.platform === 'whatsapp');
+                const li = newChannels.find(ch => ch.platform === 'linkedin');
+                return {
+                  ...c,
+                  communicationChannels: newChannels,
+                  whatsAppUrl: wa ? wa.url : c.whatsAppUrl,
+                  socials: {
+                    ...c.socials,
+                    whatsapp: wa ? wa.value : c.socials?.whatsapp,
+                    linkedin: li ? li.value : c.socials?.linkedin
+                  }
+                };
+              }
+              return c;
+            }));
+          }}
+        />
       </div>
 
       {/* Grid of qualitative relationship inputs */}
@@ -2255,13 +2207,11 @@ interface ContactFormProps {
 }
 
 function ContactForm({ goToList, setContacts, events }: ContactFormProps) {
+  const [communicationChannels, setCommunicationChannels] = useState<CommunicationChannel[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     title: '',
     avatar: '',
-    whatsapp: '',
-    linkedin: '',
-    whatsAppUrl: '',
     source: '',
     tags: ''
   });
@@ -2270,41 +2220,21 @@ function ContactForm({ goToList, setContacts, events }: ContactFormProps) {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    let whatsAppUrlFormatted = formData.whatsAppUrl.trim();
-    if (!whatsAppUrlFormatted && formData.whatsapp.trim()) {
-      const digitsOnly = formData.whatsapp.trim().replace(/[\s+()\-]/g, '');
-      if (/^\d+$/.test(digitsOnly)) {
-        whatsAppUrlFormatted = `https://wa.me/${digitsOnly}`;
-      } else {
-        const numbersOnly = formData.whatsapp.trim().replace(/\D/g, '');
-        if (numbersOnly.length > 0) {
-          whatsAppUrlFormatted = `https://wa.me/${numbersOnly}`;
-        }
-      }
-    } else if (whatsAppUrlFormatted) {
-      const digitsOnly = whatsAppUrlFormatted.replace(/[\s+()\-]/g, '');
-      if (/^\d+$/.test(digitsOnly)) {
-        whatsAppUrlFormatted = `https://wa.me/${digitsOnly}`;
-      } else if (/^wa\.me\//i.test(whatsAppUrlFormatted)) {
-        whatsAppUrlFormatted = `https://${whatsAppUrlFormatted}`;
-      } else if (!/^https?:\/\//i.test(whatsAppUrlFormatted)) {
-        const numbersOnly = whatsAppUrlFormatted.replace(/\D/g, '');
-        if (numbersOnly.length > 0) {
-          whatsAppUrlFormatted = `https://wa.me/${numbersOnly}`;
-        }
-      }
-    }
+    // Backward-compatibility extraction
+    const wa = communicationChannels.find(ch => ch.platform === 'whatsapp');
+    const li = communicationChannels.find(ch => ch.platform === 'linkedin');
 
     const newContact: Contact = {
       id: Date.now(),
       name: formData.name.trim(),
       title: formData.title.trim() || 'Networking Connection',
       avatar: formData.avatar.trim() || undefined,
+      communicationChannels: communicationChannels,
       socials: {
-        whatsapp: formData.whatsapp.trim() || undefined,
-        linkedin: formData.linkedin.trim() || undefined
+        whatsapp: wa ? wa.value : undefined,
+        linkedin: li ? li.value : undefined
       },
-      whatsAppUrl: whatsAppUrlFormatted || undefined,
+      whatsAppUrl: wa ? wa.url : undefined,
       aiChatLinks: [],
       source: formData.source.trim() || undefined,
       tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
@@ -2343,6 +2273,7 @@ function ContactForm({ goToList, setContacts, events }: ContactFormProps) {
               <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wider font-mono">Full Name *</label>
               <input 
                 id="contact-form-name"
+                data-tour-id="contact-name-input"
                 required 
                 type="text" 
                 placeholder="E.g., David Wallace"
@@ -2419,6 +2350,8 @@ function ContactForm({ goToList, setContacts, events }: ContactFormProps) {
           <div>
             <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wider font-mono">Headline / Professional Title</label>
             <input 
+              id="contact-form-title"
+              data-tour-id="contact-title-input"
               type="text" 
               placeholder="E.g., Chief Technology Officer at Stripe"
               className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl p-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-zinc-600" 
@@ -2427,84 +2360,12 @@ function ContactForm({ goToList, setContacts, events }: ContactFormProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wider font-mono">WhatsApp Chat Link / Conversation URL</label>
-            <input 
-              type="text" 
-              placeholder="Paste raw phone number (e.g. +1 555 019 2834) or direct wa.me link..."
-              className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl p-3 text-xs sm:text-sm focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-zinc-600 font-mono" 
-              value={formData.whatsAppUrl} 
-              onChange={e => setFormData({...formData, whatsAppUrl: e.target.value})} 
+          {/* Multi-Platform Social & Communication Channels */}
+          <div className="pt-2">
+            <ContactCommunicationEditor
+              channels={communicationChannels}
+              onChange={setCommunicationChannels}
             />
-            {formData.whatsAppUrl.trim() ? (
-              <div className="mt-2 p-2 px-3 bg-indigo-950/30 border border-indigo-900/30 rounded-xl flex items-center justify-between gap-2 text-[11px]">
-                <div className="text-zinc-400 font-mono flex items-center gap-1.5 truncate">
-                  <span className="text-indigo-400">⚡ Live Target:</span>
-                  <span className="text-zinc-300 font-bold truncate select-all">
-                    {(() => {
-                      const val = formData.whatsAppUrl.trim();
-                      const digitsOnly = val.replace(/[\s+()\-]/g, '');
-                      if (/^\d+$/.test(digitsOnly)) {
-                        return `https://wa.me/${digitsOnly}`;
-                      } else if (/^wa\.me\//i.test(val)) {
-                        return `https://${val}`;
-                      } else if (!/^https?:\/\//i.test(val)) {
-                        const numbersOnly = val.replace(/\D/g, '');
-                        if (numbersOnly.length > 0) {
-                          return `https://wa.me/${numbersOnly}`;
-                        }
-                      }
-                      return val;
-                    })()}
-                  </span>
-                </div>
-                <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">Auto-formatted</span>
-              </div>
-            ) : formData.whatsapp.trim() ? (
-              <div className="mt-2 p-2 px-3 bg-emerald-950/30 border border-emerald-900/30 rounded-xl flex items-center justify-between gap-2 text-[11px]">
-                <div className="text-zinc-400 font-mono flex items-center gap-1.5 truncate">
-                  <span className="text-emerald-400">⚡ Inherited wa.me Link:</span>
-                  <span className="text-zinc-300 font-bold truncate select-all">
-                    {(() => {
-                      const val = formData.whatsapp.trim();
-                      const digitsOnly = val.replace(/[\s+()\-]/g, '');
-                      if (/^\d+$/.test(digitsOnly)) {
-                        return `https://wa.me/${digitsOnly}`;
-                      }
-                      const numbersOnly = val.replace(/\D/g, '');
-                      if (numbersOnly.length > 0) {
-                        return `https://wa.me/${numbersOnly}`;
-                      }
-                      return 'https://wa.me/...';
-                    })()}
-                  </span>
-                </div>
-                <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">From Number</span>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wider font-mono">WhatsApp Number</label>
-              <input 
-                type="text" 
-                placeholder="+1 (555) 019-2834"
-                className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl p-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-zinc-600" 
-                value={formData.whatsapp} 
-                onChange={e => setFormData({...formData, whatsapp: e.target.value})} 
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wider font-mono">LinkedIn Handle</label>
-              <input 
-                type="text" 
-                placeholder="david-wallace-stripe"
-                className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl p-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-zinc-600" 
-                value={formData.linkedin} 
-                onChange={e => setFormData({...formData, linkedin: e.target.value})} 
-              />
-            </div>
           </div>
         </div>
 
@@ -2533,6 +2394,7 @@ function ContactForm({ goToList, setContacts, events }: ContactFormProps) {
 
         <button 
           id="save-contact-profile-btn"
+          data-tour-id="save-contact-button"
           type="submit" 
           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-indigo-500/10 transition-all active:scale-[0.98]"
         >

@@ -6,11 +6,12 @@ interface NavButtonProps {
   label: string;
   onClick: () => void;
   id?: string;
+  dataTourId?: string;
   badge?: number;
   platform?: 'ios' | 'android';
 }
 
-export default function NavButton({ active, icon, label, onClick, id, badge, platform = 'ios' }: NavButtonProps) {
+export default function NavButton({ active, icon, label, onClick, id, dataTourId, badge, platform = 'ios' }: NavButtonProps) {
   const isAndroid = platform === 'android';
 
   if (isAndroid) {
@@ -18,6 +19,7 @@ export default function NavButton({ active, icon, label, onClick, id, badge, pla
     return (
       <button 
         id={id}
+        data-tour-id={dataTourId}
         type="button"
         onClick={onClick}
         className="flex-1 min-h-[64px] py-1 px-1 flex flex-col items-center justify-center relative select-none cursor-pointer group focus:outline-none transition-colors"
@@ -55,6 +57,7 @@ export default function NavButton({ active, icon, label, onClick, id, badge, pla
   return (
     <button 
       id={id}
+      data-tour-id={dataTourId}
       type="button"
       onClick={onClick}
       className={`flex-1 min-h-[49px] py-1 px-1 flex flex-col items-center justify-center relative select-none cursor-pointer active:opacity-70 group focus:outline-none transition-opacity ${

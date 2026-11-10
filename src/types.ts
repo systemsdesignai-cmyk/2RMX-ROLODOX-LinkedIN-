@@ -35,6 +35,28 @@ export interface MaintenanceLog {
   screenshotUrl?: string;
 }
 
+export type SocialPlatform = 
+  | 'whatsapp' 
+  | 'instagram' 
+  | 'linkedin' 
+  | 'facebook' 
+  | 'telegram' 
+  | 'x' 
+  | 'tiktok' 
+  | 'youtube' 
+  | 'email' 
+  | 'phone' 
+  | 'custom';
+
+export interface CommunicationChannel {
+  id: string;
+  platform: SocialPlatform;
+  customLabel?: string;
+  value: string; // User-facing identifier (e.g. +27..., @username, email)
+  url: string; // Formatted clickable direct link (e.g. https://wa.me/..., mailto:...)
+  isPreferred?: boolean;
+}
+
 export interface Contact {
   id: number;
   name: string;
@@ -44,7 +66,8 @@ export interface Contact {
     whatsapp?: string;
     linkedin?: string;
   };
-  whatsAppUrl?: string; // Direct WhatsApp communication link
+  whatsAppUrl?: string; // Direct WhatsApp communication link (backward-compatible)
+  communicationChannels?: CommunicationChannel[]; // Multi-platform social & communication channels
   aiChatLinks?: AIChatLink[]; // Links to saved AI chats about this person
   source?: string;
   eventId?: number;

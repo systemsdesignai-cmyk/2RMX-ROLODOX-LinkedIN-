@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e131f" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D2FF" />
+      <stop offset="50%" stop-color="#007BFF" />
+      <stop offset="100%" stop-color="#0047AB" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#007BFF" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#00D2FF" stop-opacity="0.1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect x="6" y="6" width="500" height="500" rx="106" fill="none" stroke="url(#blueGrad)" stroke-width="4" stroke-opacity="0.4" />
+
+  <!-- Subtle Glow Layer -->
+  <circle cx="256" cy="256" r="160" fill="url(#glowGrad)" filter="url(#glow)" />
+
+  <!-- Outer Network Constellation Orbit -->
+  <circle cx="256" cy="256" r="148" fill="none" stroke="#007BFF" stroke-width="2.5" stroke-dasharray="8 8" stroke-opacity="0.45" />
+
+  <!-- Network Connection Lines -->
+  <g stroke="url(#blueGrad)" stroke-width="5" stroke-linecap="round" stroke-opacity="0.75">
+    <line x1="256" y1="210" x2="148" y2="170" />
+    <line x1="256" y1="210" x2="364" y2="170" />
+    <line x1="256" y1="280" x2="160" y2="350" />
+    <line x1="256" y1="280" x2="352" y2="350" />
+    <line x1="148" y1="170" x2="160" y2="350" />
+    <line x1="364" y1="170" x2="352" y2="350" />
+  </g>
+
+  <!-- Satellite Nodes -->
+  <circle cx="148" cy="170" r="22" fill="#09090b" stroke="#00D2FF" stroke-width="6" />
+  <circle cx="148" cy="170" r="9" fill="#00D2FF" />
+
+  <circle cx="364" cy="170" r="22" fill="#09090b" stroke="#007BFF" stroke-width="6" />
+  <circle cx="364" cy="170" r="9" fill="#007BFF" />
+
+  <circle cx="160" cy="350" r="20" fill="#09090b" stroke="#007BFF" stroke-width="5" />
+  <circle cx="160" cy="350" r="8" fill="#007BFF" />
+
+  <circle cx="352" cy="350" r="20" fill="#09090b" stroke="#00D2FF" stroke-width="5" />
+  <circle cx="352" cy="350" r="8" fill="#00D2FF" />
+
+  <!-- Central Hub (Rolodex / Relationship Core) -->
+  <circle cx="256" cy="256" r="68" fill="url(#blueGrad)" />
+  <circle cx="256" cy="256" r="54" fill="#09090b" />
+
+  <!-- Modern User / Card Glyph in Center -->
+  <g fill="url(#blueGrad)">
+    <!-- User Head -->
+    <circle cx="256" cy="235" r="20" />
+    <!-- User Shoulders -->
+    <path d="M220 286 C220 262, 292 262, 292 286 Z" />
+  </g>
+
+  <!-- Preferred Star Sparkle in Top Right -->
+  <path d="M380 115 L386 128 L400 130 L389 140 L392 153 L380 146 L368 153 L371 140 L360 130 L374 128 Z" fill="#F59E0B" />
+</svg>

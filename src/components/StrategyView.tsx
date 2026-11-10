@@ -323,10 +323,11 @@ export default function StrategyView({
       </div>
 
       <div className="space-y-5">
-        {sortedStrategies.map(strat => (
+        {sortedStrategies.map((strat, idx) => (
           <div 
             key={strat.id} 
             id={`strategy-card-${strat.id}`}
+            data-tour-id={idx === 0 ? "strategy-first-card" : undefined}
             className={`p-5 sm:p-6 rounded-3xl border shadow-xl relative transition-all duration-300 ${
               editingStrategyId === strat.id 
                 ? 'border-indigo-500 bg-zinc-900/90 shadow-[0_0_20px_rgba(0,123,255,0.1)] ring-1 ring-indigo-500/30' 

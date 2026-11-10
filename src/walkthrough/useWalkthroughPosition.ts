@@ -1,24 +1,28 @@
 import React, { useState, useEffect, useCallback, useRef, RefObject } from 'react';
-import { TargetRect, TooltipStyle, TooltipPlacement, PositionResult } from './types';
+import { TargetRect, TooltipStyle, TooltipPlacement, PositionResult, PointerCoordinates } from './types';
+import { resolveTargetElement } from './targetRegistry';
 
 interface UseWalkthroughPositionOptions {
   targetId?: string;
   tooltipRef: RefObject<HTMLDivElement | null>;
   isActive: boolean;
   stepIndex: number;
+  subActionIndex?: number;
 }
 
 const SCREEN_MARGIN = 16;
-const TARGET_GAP = 12;
+const TARGET_GAP = 14;
 
 export function useWalkthroughPosition({
   targetId,
   tooltipRef,
   isActive,
-  stepIndex
+  stepIndex,
+  subActionIndex = 0
 }: UseWalkthroughPositionOptions): PositionResult {
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
   const [placement, setPlacement] = useState<TooltipPlacement>('center');
+  const [pointerCoords, setPointerCoords] = useState<PointerCoordinates | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<TooltipStyle>({
     position: 'fixed',
     top: 100,
@@ -28,9 +32,10 @@ export function useWalkthroughPosition({
     maxHeight: 400
   });
   const [isReady, setIsReady] = useState(false);
+  const [targetNotFound, setTargetNotFound] = useState(false);
   const pollIntervalRef = useRef<number | null>(null);
 
-  // Core positioning calculator function
+  // Core positioning and collision detection calculator
   const updatePosition = useCallback(() => {
     if (!isActive) return;
 
@@ -71,13 +76,16 @@ export function useWalkthroughPosition({
       // Step has no target element -> Render viewport-centered
       const { style, placement: p } = getCenteredStyle();
       setTargetRect(null);
+      setPointerCoords(null);
       setTooltipStyle(style);
       setPlacement(p);
+      setTargetNotFound(false);
       setIsReady(true);
       return;
     }
 
-    const targetEl = document.getElementById(targetId);
+    // Resolve target element through target registry
+    const targetEl = resolveTargetElement(targetId);
     if (!targetEl) {
       // Element not yet found or off-DOM
       const { style, placement: p } = getCenteredStyle();
@@ -105,6 +113,7 @@ export function useWalkthroughPosition({
       bottom: domRect.bottom
     };
     setTargetRect(rect);
+    setTargetNotFound(false);
 
     // FLIP & SHIFT COLLISION DETECTION ENGINE
     const spaceAbove = rect.top - SCREEN_MARGIN;
@@ -129,7 +138,7 @@ export function useWalkthroughPosition({
         top = SCREEN_MARGIN;
       }
     } else {
-      // Both sides are constrained: choose the side with greater space
+      // Both sides are constrained: choose side with greater clearance
       if (spaceBelow >= spaceAbove) {
         chosenPlacement = 'bottom';
         top = Math.round(rect.bottom + TARGET_GAP);
@@ -148,6 +157,28 @@ export function useWalkthroughPosition({
     const maxLeft = viewportWidth - computedWidth - SCREEN_MARGIN;
     const left = Math.round(Math.max(minLeft, Math.min(maxLeft, desiredLeft)));
 
+    // Directional pointer coordinate calculations
+    const targetEdgeX = Math.round(targetCenterX);
+    let targetEdgeY = Math.round(rect.bottom);
+    let pointerDir: 'up' | 'down' | 'left' | 'right' = 'up';
+
+    if (chosenPlacement === 'bottom') {
+      pointerDir = 'up';
+      targetEdgeY = Math.round(rect.bottom);
+    } else if (chosenPlacement === 'top') {
+      pointerDir = 'down';
+      targetEdgeY = Math.round(rect.top);
+    }
+
+    setPointerCoords({
+      x: targetEdgeX,
+      y: targetEdgeY,
+      targetEdgeX,
+      targetEdgeY,
+      direction: pointerDir,
+      visible: true
+    });
+
     setTooltipStyle({
       position: 'fixed',
       top,
@@ -164,6 +195,7 @@ export function useWalkthroughPosition({
   useEffect(() => {
     if (!isActive) {
       setIsReady(false);
+      setTargetNotFound(false);
       return;
     }
 
@@ -182,7 +214,7 @@ export function useWalkthroughPosition({
 
     const checkTarget = () => {
       attempts++;
-      const el = document.getElementById(targetId);
+      const el = resolveTargetElement(targetId);
       if (el) {
         const rect = el.getBoundingClientRect();
         // Check if element is out of visible viewport
@@ -206,7 +238,8 @@ export function useWalkthroughPosition({
           pollIntervalRef.current = null;
         }
       } else if (attempts >= maxAttempts) {
-        // Fallback to center if element never arrives
+        // Mark target not found if still absent after 1.5s
+        setTargetNotFound(true);
         updatePosition();
         if (pollIntervalRef.current) {
           window.clearInterval(pollIntervalRef.current);
@@ -219,7 +252,7 @@ export function useWalkthroughPosition({
     checkTarget();
 
     // Start polling if not found immediately
-    const el = document.getElementById(targetId);
+    const el = resolveTargetElement(targetId);
     if (!el) {
       pollIntervalRef.current = window.setInterval(checkTarget, 100);
     }
@@ -229,7 +262,7 @@ export function useWalkthroughPosition({
         window.clearInterval(pollIntervalRef.current);
       }
     };
-  }, [targetId, isActive, stepIndex, updatePosition]);
+  }, [targetId, isActive, stepIndex, subActionIndex, updatePosition]);
 
   // Event listeners for window resize, scroll capture, visualViewport mutations
   useEffect(() => {
@@ -273,6 +306,8 @@ export function useWalkthroughPosition({
     tooltipStyle,
     targetRect,
     placement,
-    isReady
+    pointerCoords,
+    isReady,
+    targetNotFound
   };
 }

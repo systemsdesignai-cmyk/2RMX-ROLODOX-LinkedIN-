@@ -7,6 +7,37 @@ export const initialContacts: Contact[] = [
     title: 'Product Manager at TechFlow',
     avatar: 'https://i.pravatar.cc/150?u=sarah',
     socials: { whatsapp: '+1234567890', linkedin: 'sarah-j' },
+    whatsAppUrl: 'https://wa.me/1234567890',
+    communicationChannels: [
+      {
+        id: 'comm_sarah_wa',
+        platform: 'whatsapp',
+        value: '+1 234 567 890',
+        url: 'https://wa.me/1234567890',
+        isPreferred: true
+      },
+      {
+        id: 'comm_sarah_li',
+        platform: 'linkedin',
+        value: 'linkedin.com/in/sarah-jenkins',
+        url: 'https://linkedin.com/in/sarah-jenkins',
+        isPreferred: true
+      },
+      {
+        id: 'comm_sarah_ig',
+        platform: 'instagram',
+        value: '@sarah.product',
+        url: 'https://instagram.com/sarah.product',
+        isPreferred: false
+      },
+      {
+        id: 'comm_sarah_email',
+        platform: 'email',
+        value: 'sarah.jenkins@techflow.io',
+        url: 'mailto:sarah.jenkins@techflow.io',
+        isPreferred: false
+      }
+    ],
     source: 'Tech Startup Mixer 2026',
     eventId: 1,
     tags: ['Product', 'SaaS', 'Mentor'],

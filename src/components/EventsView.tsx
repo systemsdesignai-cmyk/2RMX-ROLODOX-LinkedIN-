@@ -101,6 +101,7 @@ export default function EventsView({
         <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 shrink-0 w-full sm:w-auto justify-end shadow-sm">
           <button 
             id="view-list-btn"
+            data-tour-id="events-list-toggle"
             type="button"
             onClick={() => setViewMode('list')} 
             className={`flex-1 sm:flex-initial min-h-[38px] px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer active:scale-95 ${
@@ -113,6 +114,7 @@ export default function EventsView({
           </button>
           <button 
             id="view-kanban-btn"
+            data-tour-id="events-board-toggle"
             type="button"
             onClick={() => setViewMode('kanban')} 
             className={`flex-1 sm:flex-initial min-h-[38px] px-3.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer active:scale-95 ${
@@ -130,6 +132,7 @@ export default function EventsView({
       <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar items-center border-b border-zinc-800/80">
         <button 
           id="cat-pill-all"
+          data-tour-id="events-filter-all"
           type="button"
           onClick={() => setFilterCategory('All')} 
           className={`whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer active:scale-95 shrink-0 ${

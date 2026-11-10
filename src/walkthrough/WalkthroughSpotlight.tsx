@@ -7,7 +7,6 @@ interface WalkthroughSpotlightProps {
 }
 
 const SPOTLIGHT_PADDING = 6;
-const BORDER_RADIUS = 14;
 
 export const WalkthroughSpotlight: React.FC<WalkthroughSpotlightProps> = ({
   targetRect,
@@ -27,61 +26,82 @@ export const WalkthroughSpotlight: React.FC<WalkthroughSpotlightProps> = ({
     return { x, y, width, height };
   }, [targetRect, windowWidth, windowHeight]);
 
+  if (!cutout) {
+    // Fullscreen backdrop when no target is specified
+    return (
+      <div 
+        className="fixed inset-0 z-40 bg-zinc-950/80 backdrop-blur-[2px] pointer-events-auto transition-opacity duration-300"
+        onClick={onBackdropClick}
+        aria-hidden="true"
+      />
+    );
+  }
+
   return (
     <div 
-      className="fixed inset-0 z-40 pointer-events-auto transition-opacity duration-300"
-      onClick={onBackdropClick}
+      className="fixed inset-0 z-40 pointer-events-none transition-opacity duration-300"
       aria-hidden="true"
     >
-      <svg 
-        className="w-full h-full block" 
-        style={{ width: '100vw', height: '100vh' }}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <mask id="walkthrough-spotlight-mask" x="0" y="0" width="100%" height="100%">
-            {/* White base fills entire screen */}
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            
-            {/* Black cutout creates the transparent hole */}
-            {cutout && (
-              <rect
-                x={cutout.x}
-                y={cutout.y}
-                width={cutout.width}
-                height={cutout.height}
-                rx={BORDER_RADIUS}
-                ry={BORDER_RADIUS}
-                fill="black"
-              />
-            )}
-          </mask>
-        </defs>
+      {/* 4-Quadrant Non-Blocking Scrim: Leaves cutout 100% interactive */}
+      {/* 1. Top scrim block */}
+      <div
+        className="absolute bg-zinc-950/80 backdrop-blur-[2px] pointer-events-auto transition-all duration-200"
+        style={{
+          top: 0,
+          left: 0,
+          right: 0,
+          height: `${cutout.y}px`
+        }}
+        onClick={onBackdropClick}
+      />
 
-        {/* Backdrop overlay masked with the rounded spotlight cutout */}
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(4, 15, 30, 0.78)"
-          mask="url(#walkthrough-spotlight-mask)"
-        />
-      </svg>
+      {/* 2. Bottom scrim block */}
+      <div
+        className="absolute bg-zinc-950/80 backdrop-blur-[2px] pointer-events-auto transition-all duration-200"
+        style={{
+          top: `${cutout.y + cutout.height}px`,
+          left: 0,
+          right: 0,
+          bottom: 0
+        }}
+        onClick={onBackdropClick}
+      />
 
-      {/* Active Focus Highlight Ring around spotlight element */}
-      {cutout && (
-        <div
-          className="fixed pointer-events-none rounded-[14px] border-2 border-[#007BFF] transition-all duration-300 animate-pulse"
-          style={{
-            top: `${cutout.y}px`,
-            left: `${cutout.x}px`,
-            width: `${cutout.width}px`,
-            height: `${cutout.height}px`,
-            boxShadow: '0 0 0 2px rgba(0, 123, 255, 0.25), 0 0 24px rgba(0, 123, 255, 0.45)'
-          }}
-        />
-      )}
+      {/* 3. Left scrim block */}
+      <div
+        className="absolute bg-zinc-950/80 backdrop-blur-[2px] pointer-events-auto transition-all duration-200"
+        style={{
+          top: `${cutout.y}px`,
+          left: 0,
+          width: `${cutout.x}px`,
+          height: `${cutout.height}px`
+        }}
+        onClick={onBackdropClick}
+      />
+
+      {/* 4. Right scrim block */}
+      <div
+        className="absolute bg-zinc-950/80 backdrop-blur-[2px] pointer-events-auto transition-all duration-200"
+        style={{
+          top: `${cutout.y}px`,
+          left: `${cutout.x + cutout.width}px`,
+          right: 0,
+          height: `${cutout.height}px`
+        }}
+        onClick={onBackdropClick}
+      />
+
+      {/* Active Focus Highlight Ring around the exact target cutout (pointer-events-none) */}
+      <div
+        className="absolute rounded-[14px] border-2 border-[#007BFF] pointer-events-none transition-all duration-200 animate-pulse motion-reduce:animate-none"
+        style={{
+          top: `${cutout.y}px`,
+          left: `${cutout.x}px`,
+          width: `${cutout.width}px`,
+          height: `${cutout.height}px`,
+          boxShadow: '0 0 0 2px rgba(0, 123, 255, 0.25), 0 0 24px rgba(0, 123, 255, 0.45)'
+        }}
+      />
     </div>
   );
 };

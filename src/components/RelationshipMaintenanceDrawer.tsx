@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Contact, MaintenanceLog } from '../types';
 import { usePlatform } from '../utils/platform';
+import { SocialContactIcons } from './social/SocialContactIcons';
+import { getContactChannels } from './social/communicationPlatforms';
 
 interface RelationshipMaintenanceDrawerProps {
   isOpen: boolean;
@@ -220,6 +222,7 @@ export default function RelationshipMaintenanceDrawer({
           </div>
           <button 
             id="close-maintenance-drawer-btn"
+            data-tour-id="maintenance-drawer-close"
             type="button"
             onClick={onClose}
             className="min-h-[40px] min-w-[40px] flex items-center justify-center p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors cursor-pointer"
@@ -513,9 +516,11 @@ export default function RelationshipMaintenanceDrawer({
                   </p>
                 </div>
               ) : (
-                categorized.todo.map(({ contact, reason, urgency }) => (
+                categorized.todo.map(({ contact, reason, urgency }, idx) => (
                   <div 
                     key={contact.id}
+                    id={`maint-card-${contact.id}`}
+                    data-tour-id={idx === 0 ? "maintenance-first-item" : undefined}
                     className="bg-zinc-950 border border-zinc-850 hover:border-indigo-500/30 rounded-2xl p-4 transition-all space-y-3"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -578,22 +583,15 @@ export default function RelationshipMaintenanceDrawer({
                       )}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      <div className="flex items-center gap-2">
-                        {contact.whatsAppUrl && (
-                          <a 
-                            href={contact.whatsAppUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-emerald-950/30 hover:bg-emerald-900 text-emerald-400 border border-emerald-900/30 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 active:scale-95"
-                          >
-                            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                          </a>
-                        )}
+                    {/* Communication Channels & Action Buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-zinc-900/80">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Interactive multi-platform icons with preferred badge and direct links */}
+                        <SocialContactIcons channels={getContactChannels(contact)} size="sm" />
+                        
                         <button 
                           onClick={() => { navigateToContact(contact.id); onClose(); }}
-                          className="text-[11px] text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-zinc-900 transition-colors"
+                          className="text-[11px] text-zinc-400 hover:text-white px-2 py-1 rounded-lg hover:bg-zinc-900 transition-colors"
                         >
                           View Profile
                         </button>
@@ -601,7 +599,7 @@ export default function RelationshipMaintenanceDrawer({
 
                       <button
                         onClick={() => openMaintenanceFormForContact(contact)}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1 shrink-0"
                       >
                         <CheckCircle className="w-3.5 h-3.5" /> Maintain & Tick
                       </button>
@@ -654,6 +652,9 @@ export default function RelationshipMaintenanceDrawer({
                           {contact.followUpReminderNotes && (
                             <span className="truncate text-zinc-500">• {contact.followUpReminderNotes}</span>
                           )}
+                        </div>
+                        <div className="mt-1.5">
+                          <SocialContactIcons channels={getContactChannels(contact)} size="xs" />
                         </div>
                       </div>
                     </div>
@@ -709,6 +710,9 @@ export default function RelationshipMaintenanceDrawer({
                         </h4>
                         <div className="text-[10px] text-zinc-500 truncate">
                           {contact.lastMaintainedDate ? `Last maintained: ${contact.lastMaintainedDate}` : 'Never maintained'}
+                        </div>
+                        <div className="mt-1">
+                          <SocialContactIcons channels={getContactChannels(contact)} size="xs" />
                         </div>
                       </div>
                     </div>

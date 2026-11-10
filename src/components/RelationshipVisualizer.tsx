@@ -641,6 +641,7 @@ export default function RelationshipVisualizer({
           <div className="bg-zinc-950 border border-zinc-850 p-1 rounded-xl flex gap-1">
             <button
               id="viz-mode-unified-btn"
+              data-tour-id="viz-mode-unified"
               type="button"
               onClick={() => setGraphMode('unified')}
               className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
@@ -653,6 +654,7 @@ export default function RelationshipVisualizer({
             </button>
             <button
               id="viz-mode-direct-btn"
+              data-tour-id="viz-mode-direct"
               type="button"
               onClick={() => setGraphMode('direct')}
               className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
@@ -693,6 +695,7 @@ export default function RelationshipVisualizer({
           {/* Toggle Config Menu */}
           <button
             id="viz-physics-toggle"
+            data-tour-id="viz-physics-toggle"
             type="button"
             onClick={() => setShowConfig(!showConfig)}
             className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
