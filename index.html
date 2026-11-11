@@ -16,6 +16,21 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Gracefully ignore expected WebSocket disconnects in iframe dev environments
+      window.addEventListener('error', function(e) {
+        if (e && (e.message?.includes('WebSocket') || e.filename?.includes('@vite/client'))) {
+          e.preventDefault?.();
+          e.stopImmediatePropagation?.();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e && (e.reason?.message?.includes('WebSocket') || e.reason?.stack?.includes('@vite/client'))) {
+          e.preventDefault?.();
+          e.stopImmediatePropagation?.();
+        }
+      }, true);
+    </script>
   </head>
   <body class="bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500/30">
     <div id="root"></div>

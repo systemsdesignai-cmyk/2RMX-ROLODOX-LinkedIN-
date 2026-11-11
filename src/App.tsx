@@ -19,6 +19,10 @@ import { WalkthroughHelpModal } from './walkthrough/WalkthroughHelpModal';
 import { PWAInstallButton } from './components/pwa/PWAInstallButton';
 import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 import { LocalBackupModal } from './components/pwa/LocalBackupModal';
+import { NotificationCenter } from './components/notifications/NotificationCenter';
+import { InAppReminderBanner } from './components/notifications/InAppReminderBanner';
+import { NotificationSettingsModal } from './components/notifications/NotificationSettingsModal';
+import { syncContactRemindersWithBackend, snoozeContactReminder } from './services/notificationService';
 
 export default function App() {
   const { mode, activePlatform, isIOS, isAndroid, togglePlatform } = usePlatform();
@@ -96,7 +100,49 @@ export default function App() {
   const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isLocalBackupOpen, setIsLocalBackupOpen] = useState(false);
+  const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
+  const [selectedMaintenanceContactId, setSelectedMaintenanceContactId] = useState<number | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize relationship maintenance schedules with backend push notification scheduler
+  useEffect(() => {
+    syncContactRemindersWithBackend(contacts);
+  }, [contacts]);
+
+  // Deep-link listener for Web Push notification clicks
+  useEffect(() => {
+    // 1. Check URL query parameters (e.g. ?openMaintenanceContact=123)
+    const params = new URLSearchParams(window.location.search);
+    const targetContact = params.get('openMaintenanceContact');
+    if (targetContact) {
+      const id = Number(targetContact);
+      if (!isNaN(id)) {
+        setSelectedMaintenanceContactId(id);
+        setIsMaintenanceOpen(true);
+      }
+      // Clean query string from browser bar without refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // 2. Listen for live message events from service worker
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      const handleSWMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'NOTIFICATION_CLICK') {
+          const id = Number(event.data.contactId);
+          if (!isNaN(id)) {
+            setSelectedMaintenanceContactId(id);
+            setIsMaintenanceOpen(true);
+          }
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleSWMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+    }
+  }, []);
+
+  const handleSnoozeContact = async (contactId: number, hours: number = 24) => {
+    await snoozeContactReminder(contactId, hours);
+  };
 
   const reloadLocalData = () => {
     try {
@@ -400,7 +446,8 @@ export default function App() {
     <div className="flex flex-col h-screen bg-zinc-950 font-sans text-zinc-100 selection:bg-indigo-500/30 overflow-hidden">
       {/* Top Application Bar */}
       <header className="bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800/80 text-white px-3 sm:px-6 py-2 pt-safe z-30 flex justify-between items-center shrink-0 gap-2 sm:gap-4">
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Left Actions: Hamburger Menu */}
+        <div className="flex items-center shrink-0">
           <button
             id="sidebar-hamburger-menu-btn"
             data-tour-id="sidebar-hamburger-button"
@@ -414,21 +461,10 @@ export default function App() {
               <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-zinc-950" />
             )}
           </button>
-          
-          <button
-            type="button"
-            onClick={() => { setActiveTab('contacts'); goToList(); }}
-            className="flex items-center gap-2 hover:opacity-85 transition-opacity text-left cursor-pointer"
-          >
-            <div className="bg-indigo-600/90 text-white p-1.5 rounded-xl shrink-0 shadow-sm shadow-indigo-600/20">
-              <Users className="w-4 h-4" />
-            </div>
-            <span className="text-sm font-bold tracking-tight text-zinc-100 hidden sm:inline font-display">Rolodox</span>
-          </button>
         </div>
 
         {/* Global Fuzzy Search Bar */}
-        <div ref={searchContainerRef} className="relative flex-1 max-w-[200px] sm:max-w-[320px] md:max-w-[400px]">
+        <div ref={searchContainerRef} className="relative flex-1 max-w-[440px] mx-1 sm:mx-2">
           <div className="relative w-full">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -594,14 +630,27 @@ export default function App() {
           )}
         </div>
 
-        {/* Header Right Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Header Right Actions - Reclaimed space, preserved Notifications and Maintain */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Notification Center Popover */}
+          <NotificationCenter
+            contacts={contacts}
+            onOpenMaintenance={(id) => {
+              setSelectedMaintenanceContactId(id || null);
+              setIsMaintenanceOpen(true);
+            }}
+            onOpenContact={navigateToContact}
+            onOpenSettings={() => setIsNotificationSettingsOpen(true)}
+            onSnoozeContact={handleSnoozeContact}
+          />
+
+          {/* Relationship Maintenance Shortcut & Counter */}
           <button
             id="header-maintain-btn"
             data-tour-id="maintain-button"
             type="button"
             onClick={() => setIsMaintenanceOpen(true)}
-            className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-medium px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            className="min-h-[38px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-medium px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-sm"
             title="Relationship Maintenance To-Do"
           >
             <Clock className="w-3.5 h-3.5 text-indigo-400" />
@@ -613,88 +662,6 @@ export default function App() {
             }`}>
               {dueContactsCount}
             </span>
-          </button>
-
-          {viewState.view === 'list' && activeTab !== 'visualizer' && activeTab !== 'profile' && (
-            <button 
-              id="header-create-btn"
-              data-tour-id="create-contact-button"
-              type="button"
-              onClick={goToCreate} 
-              className="min-h-[36px] min-w-[36px] bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center border border-indigo-500/30 cursor-pointer"
-              title={`Create new item in ${activeTab}`}
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Guided Walkthrough / Tour Launcher Trigger */}
-          <button
-            id="walkthrough-help-trigger"
-            data-tour-id="tour-help-button"
-            type="button"
-            onClick={() => setIsHelpModalOpen(true)}
-            className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono px-2 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
-            title="Interactive Walkthroughs & Guided Tours"
-            aria-label="Open Guided Tours & Help"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-[#38BDF8]" />
-            <span className="font-semibold hidden sm:inline text-zinc-200">Tour</span>
-          </button>
-
-          {/* Adaptive OS Guideline Switcher */}
-          <button
-            id="platform-switch-btn"
-            data-tour-id="platform-switch-button"
-            type="button"
-            onClick={togglePlatform}
-            className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono px-2 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
-            title={`Active Guidelines: ${activePlatform === 'ios' ? 'Apple HIG (iOS)' : 'Material Design 3 (Android)'} (${mode === 'auto' ? 'Auto-detected' : 'Manual lock'}). Click to toggle.`}
-          >
-            <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="font-bold">{isIOS ? 'iOS' : 'M3'}</span>
-            <span className="text-[9px] text-zinc-500 uppercase hidden sm:inline">{mode === 'auto' ? 'Auto' : 'Lock'}</span>
-          </button>
-
-          {/* PWA In-App Install Button */}
-          <PWAInstallButton variant="header" />
-
-          {/* Local Storage & Device Backup Modal Trigger */}
-          <button
-            id="local-storage-backup-btn"
-            type="button"
-            onClick={() => setIsLocalBackupOpen(true)}
-            className="min-h-[36px] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
-            title="Save data onto local device or restore from backup"
-            aria-label="Local storage and device backup"
-          >
-            <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="font-semibold hidden sm:inline text-zinc-200">Local</span>
-          </button>
-
-          <button
-            id="header-profile-shortcut"
-            type="button"
-            onClick={() => setActiveTab('profile')}
-            className={`min-h-[36px] min-w-[36px] rounded-xl p-0.5 border transition-all active:scale-95 flex items-center justify-center overflow-hidden cursor-pointer ${
-              activeTab === 'profile' 
-                ? 'border-indigo-500 ring-2 ring-indigo-500/30' 
-                : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900'
-            }`}
-            title="Go to My Profile"
-          >
-            {userProfile.avatar ? (
-              <img 
-                src={userProfile.avatar} 
-                alt={userProfile.name} 
-                className="w-7 h-7 rounded-lg object-cover" 
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="w-7 h-7 bg-zinc-800 rounded-lg flex items-center justify-center">
-                <User className="w-3.5 h-3.5 text-zinc-400" />
-              </div>
-            )}
           </button>
         </div>
       </header>
@@ -818,13 +785,74 @@ export default function App() {
         />
       </nav>
 
+      {/* Vertically Stacked Floating Action Buttons (FABs): Add (+) on top, Help (?) directly underneath */}
+      <div 
+        className="fixed right-4 sm:right-5 z-25 flex flex-col items-center gap-3 pointer-events-none select-none"
+        style={{
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 78px)'
+        }}
+      >
+        {/* Add (+) Button - Circular, blue background, white plus icon */}
+        {viewState.view === 'list' && (
+          <button
+            id="header-create-btn"
+            data-tour-id="create-contact-button"
+            type="button"
+            onClick={() => {
+              if (activeTab === 'visualizer' || activeTab === 'profile') {
+                setActiveTab('contacts');
+              }
+              goToCreate();
+            }}
+            className="pointer-events-auto w-[54px] h-[54px] rounded-full bg-[#007BFF] hover:bg-[#0069D9] active:bg-[#0056B3] text-white flex items-center justify-center shadow-xl shadow-[#007BFF]/35 active:scale-95 transition-all cursor-pointer border border-[#007BFF]/40 focus:outline-none focus:ring-2 focus:ring-[#007BFF]/50"
+            title={`Create new item in ${activeTab}`}
+            aria-label="Add new entry"
+          >
+            <Plus className="w-6 h-6 stroke-[2.5]" />
+          </button>
+        )}
+
+        {/* Help (?) Button - Circular, dark background, blue question-mark icon */}
+        <button
+          id="walkthrough-help-trigger"
+          data-tour-id="tour-help-button"
+          type="button"
+          onClick={() => setIsHelpModalOpen(true)}
+          className="pointer-events-auto w-[54px] h-[54px] rounded-full bg-zinc-900/95 hover:bg-zinc-850 active:bg-zinc-800 text-[#38BDF8] border border-zinc-800 hover:border-zinc-700 flex items-center justify-center shadow-xl shadow-black/60 active:scale-95 transition-all cursor-pointer backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-[#38BDF8]/40"
+          title="Interactive Walkthroughs & Guided Tours"
+          aria-label="Open Guided Tours & Help"
+        >
+          <HelpCircle className="w-6 h-6 text-[#38BDF8]" />
+        </button>
+      </div>
+
       {/* Relationship Maintenance Slide-out Drawer */}
       <RelationshipMaintenanceDrawer
         isOpen={isMaintenanceOpen}
-        onClose={() => setIsMaintenanceOpen(false)}
+        onClose={() => {
+          setIsMaintenanceOpen(false);
+          setSelectedMaintenanceContactId(null);
+        }}
         contacts={contacts}
         setContacts={setContacts}
         navigateToContact={navigateToContact}
+        initialContactId={selectedMaintenanceContactId}
+      />
+
+      {/* In-App Floating Reminder Alert */}
+      <InAppReminderBanner
+        contacts={contacts}
+        onOpenMaintenance={(id) => {
+          setSelectedMaintenanceContactId(id || null);
+          setIsMaintenanceOpen(true);
+        }}
+        onSnooze={(id) => handleSnoozeContact(id, 24)}
+      />
+
+      {/* Push Notification Settings Modal */}
+      <NotificationSettingsModal
+        isOpen={isNotificationSettingsOpen}
+        onClose={() => setIsNotificationSettingsOpen(false)}
       />
 
       {/* Production-Grade Interactive Onboarding Walkthrough */}

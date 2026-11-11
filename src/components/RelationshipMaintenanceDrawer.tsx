@@ -16,6 +16,7 @@ interface RelationshipMaintenanceDrawerProps {
   contacts: Contact[];
   setContacts: React.Dispatch<React.SetStateAction<Contact[]>>;
   navigateToContact: (id: number) => void;
+  initialContactId?: number | null;
 }
 
 export default function RelationshipMaintenanceDrawer({
@@ -23,12 +24,23 @@ export default function RelationshipMaintenanceDrawer({
   onClose,
   contacts,
   setContacts,
-  navigateToContact
+  navigateToContact,
+  initialContactId
 }: RelationshipMaintenanceDrawerProps) {
   const { isAndroid } = usePlatform();
   const [activeTab, setActiveTab] = useState<'todo' | 'scheduled' | 'all' | 'history'>('todo');
   const [selectedContactForMaintenance, setSelectedContactForMaintenance] = useState<Contact | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
+
+  // Automatically select target contact if opened from notification or deep link
+  React.useEffect(() => {
+    if (isOpen && initialContactId) {
+      const match = contacts.find(c => c.id === initialContactId);
+      if (match) {
+        openMaintenanceFormForContact(match);
+      }
+    }
+  }, [isOpen, initialContactId, contacts]);
   
   // Maintenance logging form state
   const [logType, setLogType] = useState<MaintenanceLog['type']>('whatsapp');
@@ -334,6 +346,16 @@ export default function RelationshipMaintenanceDrawer({
                 <div>
                   <h4 className="font-bold text-sm text-white font-display">Log Touchpoint: {selectedContactForMaintenance.name}</h4>
                   <p className="text-[10px] text-zinc-400 truncate">{selectedContactForMaintenance.title}</p>
+                </div>
+              </div>
+
+              {/* Direct Communication Launchers */}
+              <div className="mb-4 p-3 bg-zinc-900/90 border border-zinc-800 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase font-mono block">
+                  Initiate Contact via Preferred Methods:
+                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <SocialContactIcons channels={getContactChannels(selectedContactForMaintenance)} size="md" showLabels />
                 </div>
               </div>
 

@@ -32,7 +32,7 @@ export const fullTourSteps: WalkthroughStep[] = [
         id: 'action-tap-create-contact',
         targetTourId: TOUR_TARGETS.HEADER_CREATE_BTN,
         targetTab: 'contacts',
-        instruction: 'Tap the + button in the header to open the new contact creation form.',
+        instruction: 'Tap the floating + button at the bottom-right to open the new contact creation form.',
         actionPrompt: 'Tap + Create',
         verification: {
           type: 'click',
@@ -203,9 +203,9 @@ export const fullTourSteps: WalkthroughStep[] = [
   {
     id: 'network-topology-and-platform',
     targetTab: 'visualizer',
-    title: 'D3 Network Topology & Adaptive OS',
-    purpose: 'Explore your entire network in a real-time physics simulation and customize your OS design guidelines.',
-    section: 'Topology & OS',
+    title: 'D3 Network Topology',
+    purpose: 'Explore your entire relationship network in a real-time physics-based interactive graph.',
+    section: 'Topology',
     subActions: [
       {
         id: 'action-tap-visualizer-tab',
@@ -218,17 +218,6 @@ export const fullTourSteps: WalkthroughStep[] = [
           check: (ctx: TourContext) => ctx.activeTab === 'visualizer'
         },
         confirmationMessage: '✓ Network graph rendered!'
-      },
-      {
-        id: 'action-toggle-platform-switcher',
-        targetTourId: TOUR_TARGETS.PLATFORM_SWITCH_BTN,
-        targetTab: 'visualizer',
-        instruction: 'Tap the OS pill in the header to switch between Apple HIG and Google Material Design 3.',
-        actionPrompt: 'Tap OS pill',
-        verification: {
-          type: 'click'
-        },
-        confirmationMessage: '✓ Operating system styling toggled!'
       }
     ]
   }
