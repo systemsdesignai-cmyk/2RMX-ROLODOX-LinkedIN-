@@ -17,19 +17,72 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <script>
-      // Gracefully ignore expected WebSocket disconnects in iframe dev environments
-      window.addEventListener('error', function(e) {
-        if (e && (e.message?.includes('WebSocket') || e.filename?.includes('@vite/client'))) {
-          e.preventDefault?.();
-          e.stopImmediatePropagation?.();
+      (function() {
+        // 1. Suppress console.error for expected Vite HMR WebSocket disconnects in AI Studio dev iframe
+        const origConsoleError = console.error;
+        console.error = function(...args) {
+          const first = args[0];
+          const msg = (first instanceof Error ? (first.message + ' ' + (first.stack || '')) : String(first)) || '';
+          if (
+            msg.includes('WebSocket closed without opened') ||
+            msg.includes('@vite/client') ||
+            msg.includes('vite:ws')
+          ) {
+            return;
+          }
+          return origConsoleError.apply(console, args);
+        };
+
+        // 2. Mock Vite HMR WebSocket to satisfy @vite/client and prevent "WebSocket closed without opened"
+        if (typeof window !== 'undefined' && window.WebSocket) {
+          const OrigWebSocket = window.WebSocket;
+          const PatchedWebSocket = function(url, protocols) {
+            if (protocols === 'vite-hmr' || (typeof url === 'string' && (url.includes('vite-hmr') || url.includes('token=')))) {
+              const target = new EventTarget();
+              target.readyState = 1; // WebSocket.OPEN
+              target.OPEN = 1;
+              target.CLOSED = 3;
+              target.CLOSING = 2;
+              target.CONNECTING = 0;
+              target.url = String(url);
+              target.protocol = 'vite-hmr';
+              target.extensions = '';
+              target.bufferedAmount = 0;
+              target.binaryType = 'blob';
+              target.send = function() {};
+              target.close = function() {
+                target.readyState = 3;
+                target.dispatchEvent(new Event('close'));
+              };
+              setTimeout(() => {
+                target.dispatchEvent(new Event('open'));
+              }, 0);
+              return target;
+            }
+            return new OrigWebSocket(url, protocols);
+          };
+          PatchedWebSocket.prototype = OrigWebSocket.prototype;
+          PatchedWebSocket.CONNECTING = 0;
+          PatchedWebSocket.OPEN = 1;
+          PatchedWebSocket.CLOSING = 2;
+          PatchedWebSocket.CLOSED = 3;
+          window.WebSocket = PatchedWebSocket;
         }
-      }, true);
-      window.addEventListener('unhandledrejection', function(e) {
-        if (e && (e.reason?.message?.includes('WebSocket') || e.reason?.stack?.includes('@vite/client'))) {
-          e.preventDefault?.();
-          e.stopImmediatePropagation?.();
-        }
-      }, true);
+
+        // 3. Prevent uncaught errors / unhandled rejections from bubbling
+        window.addEventListener('error', function(e) {
+          if (e && (e.message?.includes('WebSocket') || e.filename?.includes('@vite/client'))) {
+            e.preventDefault?.();
+            e.stopImmediatePropagation?.();
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e && (e.reason?.message?.includes('WebSocket') || e.reason?.stack?.includes('@vite/client'))) {
+            e.preventDefault?.();
+            e.stopImmediatePropagation?.();
+          }
+        }, true);
+      })();
     </script>
   </head>
   <body class="bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500/30">
