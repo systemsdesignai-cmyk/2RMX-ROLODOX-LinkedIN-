@@ -104,9 +104,13 @@ export default function App() {
   const [selectedMaintenanceContactId, setSelectedMaintenanceContactId] = useState<number | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // Synchronize relationship maintenance schedules with backend push notification scheduler
+  // Synchronize relationship maintenance schedules with push notification scheduler & check due reminders
   useEffect(() => {
     syncContactRemindersWithBackend(contacts);
+    const intervalId = setInterval(() => {
+      syncContactRemindersWithBackend(contacts);
+    }, 60000);
+    return () => clearInterval(intervalId);
   }, [contacts]);
 
   // Deep-link listener for Web Push notification clicks

@@ -216,7 +216,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             <div className="pt-2 border-t border-zinc-900 flex items-center justify-between gap-2">
               <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                VAPID Verified Device
+                {pushStatus.mode === 'server' ? 'VAPID Server Push' : 'Device System Push'}
               </span>
 
               <button
